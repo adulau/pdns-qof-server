@@ -106,8 +106,19 @@ class QueryHandler(tornado.web.RequestHandler):
         else:
                 self.write(JsonQOF(getRecord(t = q.strip())))
 
+class FullQueryHandler(tornado.web.RequestHandler):
+    def get(self, q):
+        print ("fquery: "+q)
+        if iptools.ipv4.validate_ip(q) or iptools.ipv6.validate_ip(q):
+            for x in getAssociatedRecords(q):
+                self.write(JsonQOF(getRecord(x)))
+        else:
+            for x in getAssociatedRecords(q):
+                self.write(JsonQOF(getRecord(t = x.strip())))
+
 application = tornado.web.Application([
     (r"/query/(.*)",QueryHandler),
+    (r"/fquery/(.*)",FullQueryHandler),
     (r"/info", InfoHandler)
 ])
 
