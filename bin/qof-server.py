@@ -14,6 +14,11 @@
 #
 # Copyright (c) 2013 Alexandre Dulaunoy - a@foo.be
 
+from datetime import date
+import tornado.escape
+import tornado.ioloop
+import tornado.web
+
 import iptools
 import redis
 import json
@@ -56,7 +61,7 @@ def getRecord(t = None):
             if r.smembers(rec):
                 rrval = {}
                 for v in r.smembers(rec):
-                    rdata = v.decode(encoding='UTF-8')
+                    rdata = v.decode(encoding='UTF-8').strip()
                     rrval['time_first'] = getFirstSeen(t1=t, t2=rdata)
                     rrval['time_last'] = getLastSeen(t1=t, t2=rdata)
                     if rrval['time_first'] is None:
@@ -86,8 +91,27 @@ def JsonQOF(rrfound = None):
         rrqof = rrqof + json.dumps(rr) + "\n"
     return rrqof
 
+class InfoHandler(tornado.web.RequestHandler):
+    def get(self):
+        response = { 'version': 'git',
+                     'software': 'pdns-qof-server' }
+        self.write(response)
 
-if __name__ == "__main__":
+class QueryHandler(tornado.web.RequestHandler):
+    def get(self, q):
+        print ("query: "+q)
+        if iptools.ipv4.validate_ip(q) or iptools.ipv6.validate_ip(q):
+            for x in getAssociatedRecords(q):
+                self.write(JsonQOF(getRecord(x)))
+        else:
+                self.write(JsonQOF(getRecord(t = q.strip())))
+
+application = tornado.web.Application([
+    (r"/query/(.*)",QueryHandler),
+    (r"/info", InfoHandler)
+])
+
+if __name__ == "test":
 
     qq = ["foo.be", "8.8.8.8"]
 
@@ -97,4 +121,7 @@ if __name__ == "__main__":
                 print (JsonQOF(getRecord(x)))
         else:
                 print (JsonQOF(getRecord(t = q)))
+else:
+    application.listen(8888)
+    tornado.ioloop.IOLoop.instance().start()
 
