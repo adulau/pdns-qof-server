@@ -11,6 +11,16 @@ Requirements
 - Python [iptools](https://github.com/bd808/python-iptools)
 - Python [redis](https://pypi.python.org/pypi/redis/) client
 
+Running the qof-server
+----------------------
+
+The server is using the default Redis configuration for the pdns-toolkit. Don't forget to change it if you have different
+configuration for your Passive dns data store.
+
+```bash
+python3 ./bin/qos-server.py
+```
+
 Usage
 -----
 
@@ -38,5 +48,24 @@ curl http://127.0.0.1:8888/query/80.169.63.162
 {"count": "94256", "time_first": "1298398002", "rrtype": "A", "rrname": "www.lalibre.be", "rrdata": "212.35.116.249", "time_last": "1361278027"}
 {"count": "213", "time_first": "1298398834", "rrtype": "A", "rrname": "infosports.lalibre.be", "rrdata": "212.35.116.234", "time_last": "1355432823"}
 {"count": "213", "time_first": "1298398834", "rrtype": "A", "rrname": "infosports.lalibre.be", "rrdata": "212.35.116.234", "time_last": "1355432823"}
+```
+
+rr-types tool
+-------------
+
+rr-types.py is a tool to dump current IANA DNS RR types in various formats.
+
+```bash
+python3 bin/rr-types.py --help
+usage: rr-types.py [-h] [-d] [-j] [-i] [-v]
+
+Dump IANA DNS parameters in various formats
+
+optional arguments:
+  -h, --help  show this help message and exit
+  -d          Python dict
+  -j          JSON output (default format)
+  -i          Disable integer value RR check
+  -v          Verbose output
 ```
 
