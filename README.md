@@ -1,7 +1,7 @@
 pdns-qof-server
 ===============
 
-pdns-qof server [qof](https://github.com/adulau/pdns-qof) compliant passive DNS query interface for the [pdns-toolkit](https://github.com/adulau/pdns-toolkit) or similar passive dns.
+pdns-qof server [cof](https://github.com/adulau/pdns-qof) "Common Output Format" compliant passive DNS query interface for the [pdns-toolkit](https://github.com/adulau/pdns-toolkit) or similar passive dns.
 
 Requirements
 ------------
