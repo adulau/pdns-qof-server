@@ -83,10 +83,21 @@ def getAssociatedRecords(rdata = None):
             records.append(v.decode(encoding='UTF-8'))
     return records
 
-def JsonQOF(rrfound = None):
+def RemDuplicate(d = None):
+    if d is None:
+        return False
+    outd = [dict(t) for t in set([tuple(o.items()) for o in d])]
+    return outd
+
+
+def JsonQOF(rrfound = None, RemoveDuplicate=True):
     if rrfound is None:
         return False
     rrqof = ""
+
+    if RemoveDuplicate:
+        rrfound=RemDuplicate(d=rrfound)
+
     for rr in rrfound:
         rrqof = rrqof + json.dumps(rr) + "\n"
     return rrqof
