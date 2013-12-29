@@ -27,6 +27,8 @@ rrset = [{"Reference": "[RFC1035]", "Type": "A", "Value": "1", "Meaning": "a hos
 
 r=redis.StrictRedis(host='localhost', port=6379, db=0)
 
+rrset_supported = ['1','2','5','15','28','33']
+
 def getFirstSeen(t1 = None, t2 = None):
     if t1 is None or t2 is None:
         return False
@@ -56,7 +58,7 @@ def getRecord(t = None):
         return False
     rrfound = []
     for rr in rrset:
-        if (rr['Value']) is not None:
+        if (rr['Value']) is not None and rr['Value'] in rrset_supported:
             rec = "r:"+t+":"+rr['Value']
             if r.smembers(rec):
                 rrval = {}
