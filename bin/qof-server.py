@@ -60,9 +60,10 @@ def getRecord(t = None):
     for rr in rrset:
         if (rr['Value']) is not None and rr['Value'] in rrset_supported:
             rec = "r:"+t+":"+rr['Value']
-            if r.smembers(rec):
+            rs = r.smembers(rec)
+            if rs:
                 rrval = {}
-                for v in r.smembers(rec):
+                for v in rs:
                     rdata = v.decode(encoding='UTF-8').strip()
                     rrval['time_first'] = getFirstSeen(t1=t, t2=rdata)
                     rrval['time_last'] = getLastSeen(t1=t, t2=rdata)
