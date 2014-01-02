@@ -15,9 +15,7 @@
 # Copyright (c) 2013 Alexandre Dulaunoy - a@foo.be
 
 from datetime import date
-import tornado.escape
-import tornado.ioloop
-import tornado.web
+import cherrypy
 
 import iptools
 import redis
@@ -105,36 +103,35 @@ def JsonQOF(rrfound = None, RemoveDuplicate=True):
         rrqof = rrqof + json.dumps(rr) + "\n"
     return rrqof
 
-class InfoHandler(tornado.web.RequestHandler):
-    def get(self):
-        response = { 'version': 'git',
-                     'software': 'pdns-qof-server' }
-        self.write(response)
+class Root:
+    def info(self):
+        response = { 'version': 'git','software': 'pdns-qof-server' }
+        return json.dumps(response)
 
-class QueryHandler(tornado.web.RequestHandler):
-    def get(self, q):
+    def query(self, q):
         print ("query: "+q)
+        o=""
         if iptools.ipv4.validate_ip(q) or iptools.ipv6.validate_ip(q):
             for x in getAssociatedRecords(q):
-                self.write(JsonQOF(getRecord(x)))
+                o = o + JsonQOF(getRecord(x))
         else:
-                self.write(JsonQOF(getRecord(t = q.strip())))
+                o = o + JsonQOF(getRecord(t = q.strip()))
+        return o
 
-class FullQueryHandler(tornado.web.RequestHandler):
-    def get(self, q):
+    def fquery(self, q):
         print ("fquery: "+q)
+        o=""
         if iptools.ipv4.validate_ip(q) or iptools.ipv6.validate_ip(q):
             for x in getAssociatedRecords(q):
-                self.write(JsonQOF(getRecord(x)))
+                o = o + JsonQOF(getRecord(x))
         else:
             for x in getAssociatedRecords(q):
-                self.write(JsonQOF(getRecord(t = x.strip())))
+                o = o + JsonQOF(getRecord(t = x.strip()))
+        return o
 
-application = tornado.web.Application([
-    (r"/query/(.*)",QueryHandler),
-    (r"/fquery/(.*)",FullQueryHandler),
-    (r"/info", InfoHandler)
-])
+    info.exposed = True
+    query.exposed = True
+    fquery.exposed = True
 
 if __name__ == "test":
 
@@ -147,6 +144,7 @@ if __name__ == "test":
         else:
                 print (JsonQOF(getRecord(t = q)))
 else:
-    application.listen(8888)
-    tornado.ioloop.IOLoop.instance().start()
+    root = Root()
+    cherrypy.config.update({ 'server.socket_port': 8887, 'request.show_tracebacks': False, 'server.thread_pool': 30, 'server.socket_host': '::'})
+    cherrypy.quickstart(root)
 
