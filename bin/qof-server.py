@@ -33,7 +33,7 @@ def getFirstSeen(t1 = None, t2 = None):
     rec = "s:"+t1.lower()+":"+t2.lower()
     recget = r.get(rec)
     if recget is not None:
-        return recget.decode(encoding='UTF-8')
+        return int(recget.decode(encoding='UTF-8'))
 
 def getLastSeen(t1 = None, t2 = None):
     if t1 is None or t2 is None:
@@ -41,7 +41,7 @@ def getLastSeen(t1 = None, t2 = None):
     rec = "l:"+t1.lower()+":"+t2.lower()
     recget = r.get(rec)
     if recget is not None:
-        return recget.decode(encoding='UTF-8')
+        return int(recget.decode(encoding='UTF-8'))
 
 def getCount(t1 = None, t2 = None):
     if t1 is None or t2 is None:
@@ -49,7 +49,7 @@ def getCount(t1 = None, t2 = None):
     rec = "o:"+t1.lower()+":"+t2.lower()
     recget = r.get(rec)
     if recget is not None:
-        return recget.decode(encoding='UTF-8')
+        return int(recget.decode(encoding='UTF-8'))
 
 def getRecord(t = None):
     if t is None:
