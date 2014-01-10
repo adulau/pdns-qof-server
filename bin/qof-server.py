@@ -70,7 +70,7 @@ def getRecord(t = None):
                     rrval['count'] = getCount(t1=t, t2=rdata)
                     rrval['rrtype'] = rr['Type']
                     rrval['rrname'] = t
-                    rrval['rrdata'] = rdata
+                    rrval['rdata'] = rdata
                     rrfound.append(rrval)
     return rrfound
 
