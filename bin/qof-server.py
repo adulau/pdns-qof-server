@@ -62,8 +62,8 @@ def getRecord(t = None):
             rec = "r:"+t+":"+rr['Value']
             rs = r.smembers(rec)
             if rs:
-                rrval = {}
                 for v in rs:
+                    rrval = {}
                     rdata = v.decode(encoding='UTF-8').strip()
                     rrval['time_first'] = getFirstSeen(t1=t, t2=rdata)
                     rrval['time_last'] = getLastSeen(t1=t, t2=rdata)
