@@ -29,6 +29,8 @@ r=redis.StrictRedis(host='localhost', port=6379, db=0)
 
 rrset_supported = ['1','2','5','15','28','33']
 
+origin = "https://www.circl.lu/pdns/"
+
 def getFirstSeen(t1 = None, t2 = None):
     if t1 is None or t2 is None:
         return False
@@ -73,6 +75,8 @@ def getRecord(t = None):
                     rrval['rrtype'] = rr['Type']
                     rrval['rrname'] = t
                     rrval['rdata'] = rdata
+                    if origin:
+                        rrval['origin'] = origin
                     rrfound.append(rrval)
     return rrfound
 
