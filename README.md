@@ -8,7 +8,6 @@ Requirements
 
 - Python 3
 - [Tornado](http://www.tornadoweb.org)
-- Python [iptools](https://github.com/bd808/python-iptools)
 - Python [redis](https://pypi.python.org/pypi/redis/) client
 
 Running the qof-server

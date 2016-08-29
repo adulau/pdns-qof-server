@@ -18,7 +18,7 @@ import tornado.escape
 import tornado.ioloop
 import tornado.web
 
-import iptools
+from ipaddress import ip_address
 import redis
 import json
 import sys
@@ -115,25 +115,71 @@ class InfoHandler(tornado.web.RequestHandler):
         self.write(response)
 
 
+def is_ip(q):
+    try:
+        ip_address(q)
+        return True
+    except:
+        return False
+
+
 class QueryHandler(tornado.web.RequestHandler):
+
+    # Default value in Python 3.5
+    # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor
+    nb_threads = tornado.process.cpu_count() * 5
+    executor = ThreadPoolExecutor(nb_threads)
+
+    @run_on_executor
+    def run_request(self, q):
+        to_return = []
+        if is_ip(q):
+            for x in getAssociatedRecords(q):
+                to_return.append(JsonQOF(getRecord(x)))
+        else:
+            to_return.append(JsonQOF(getRecord(t=q.strip())))
+        return to_return
+
+    @tornado.gen.coroutine
     def get(self, q):
         print("query: " + q)
-        if iptools.ipv4.validate_ip(q) or iptools.ipv6.validate_ip(q):
-            for x in getAssociatedRecords(q):
-                self.write(JsonQOF(getRecord(x)))
-        else:
-                self.write(JsonQOF(getRecord(t=q.strip())))
+        try:
+            responses = yield self.run_request(q)
+            for r in responses:
+                self.write(r)
+        except Exception as e:
+            print('Something went wrong with {}:\n{}'.format(q, e))
+        finally:
+            self.finish()
 
 
 class FullQueryHandler(tornado.web.RequestHandler):
-    def get(self, q):
-        print("fquery: " + q)
-        if iptools.ipv4.validate_ip(q) or iptools.ipv6.validate_ip(q):
+    # Default value in Python 3.5
+    # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor
+    nb_threads = tornado.process.cpu_count() * 5
+    executor = ThreadPoolExecutor(nb_threads)
+
+    @run_on_executor
+    def run_request(self, q):
+        to_return = []
+        if is_ip(q):
             for x in getAssociatedRecords(q):
-                self.write(JsonQOF(getRecord(x)))
+                to_return.append(JsonQOF(getRecord(x)))
         else:
             for x in getAssociatedRecords(q):
-                self.write(JsonQOF(getRecord(t=x.strip())))
+                to_return.append(JsonQOF(getRecord(t=x.strip())))
+        return to_return
+
+    def get(self, q):
+        print("fquery: " + q)
+        try:
+            responses = yield self.run_request(q)
+            for r in responses:
+                self.write(r)
+        except Exception as e:
+            print('Something went wrong with {}:\n{}'.format(q, e))
+        finally:
+            self.finish()
 
 
 def main():
