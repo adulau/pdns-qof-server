@@ -15,13 +15,22 @@
 # Copyright (c) 2013 Alexandre Dulaunoy - a@foo.be
 
 import tornado.escape
-import tornado.ioloop
+from tornado.ioloop import IOLoop
 import tornado.web
+import tornado.process
+from tornado.concurrent import run_on_executor
+from concurrent.futures import ThreadPoolExecutor
 
+import argparse
 from ipaddress import ip_address
 import redis
 import json
 import sys
+import signal
+
+
+def handle_signal(sig, frame):
+    IOLoop.instance().add_callback(IOLoop.instance().stop)
 
 
 def getFirstSeen(t1=None, t2=None):
@@ -170,6 +179,7 @@ class FullQueryHandler(tornado.web.RequestHandler):
                 to_return.append(JsonQOF(getRecord(t=x.strip())))
         return to_return
 
+    @tornado.gen.coroutine
     def get(self, q):
         print("fquery: " + q)
         try:
@@ -187,6 +197,15 @@ def main():
     global r
     global rrset_supported
     global origin
+    signal.signal(signal.SIGINT, handle_signal)
+    signal.signal(signal.SIGTERM, handle_signal)
+    argParser = argparse.ArgumentParser(description='qof-server server')
+    argParser.add_argument('-p', default=8888, help='qof-server TCP port (default 8888)')
+    argParser.add_argument('-l', default='localhost', help='misp-modules listen address (default localhost)')
+    args = argParser.parse_args()
+    port = args.p
+    listen = args.l
+
     rrset = [
         {"Reference": "[RFC1035]", "Type": "A", "Value": "1", "Meaning": "a host address", "Template": "", "Registration Date": ""},
         {"Reference": "[RFC1035]", "Type": "NS", "Value": "2", "Meaning": "an authoritative name server", "Template": "", "Registration Date": ""},
@@ -281,8 +300,10 @@ def main():
         (r"/info", InfoHandler)
     ])
 
-    application.listen(8888)
-    tornado.ioloop.IOLoop.instance().start()
+    application.listen(port, address=listen)
+    IOLoop.instance().start()
+    IOLoop.instance().stop()
+    return 0
 
 if __name__ == '__main__':
     sys.exit(main())
