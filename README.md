@@ -8,8 +8,15 @@ Requirements
 
 - Python 3
 - [Tornado](http://www.tornadoweb.org)
-- Python [iptools](https://github.com/bd808/python-iptools)
 - Python [redis](https://pypi.python.org/pypi/redis/) client
+
+Installation
+------------
+
+```
+pip3 install .
+```
+
 
 Running the qof-server
 ----------------------
@@ -18,7 +25,7 @@ The server is using the default Redis configuration for the pdns-toolkit. Don't 
 configuration for your Passive dns data store.
 
 ```bash
-python3 ./bin/qos-server.py
+qos-server
 ```
 
 Usage

@@ -1,0 +1,4 @@
+__pycache__
+*.swp
+*.pyc
+qos_server.egg-info/
