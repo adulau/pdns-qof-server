@@ -200,11 +200,19 @@ def main():
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
     argParser = argparse.ArgumentParser(description='qof-server server')
+    argParser.add_argument('-o', default='https://www.circl.lu/pdns/', help='Origin of the PDNS (default: https://www.circl.lu/pdns/)')
     argParser.add_argument('-p', default=8888, help='qof-server TCP port (default 8888)')
-    argParser.add_argument('-l', default='localhost', help='misp-modules listen address (default localhost)')
+    argParser.add_argument('-l', default='localhost', help='qof-server listen address (default localhost)')
+    argParser.add_argument('-rp', default=6379, help='redis-server TCP port (default 8888)')
+    argParser.add_argument('-rl', default='localhost', help='redis-server listen address (default localhost)')
+    argParser.add_argument('-rd', default=0, help='redis-server database (default 0)')
     args = argParser.parse_args()
+    origin = args.o
     port = args.p
     listen = args.l
+    redis_port = args.rp
+    redis_listen = args.rl
+    redis_db = args.rd
 
     rrset = [
         {"Reference": "[RFC1035]", "Type": "A", "Value": "1", "Meaning": "a host address", "Template": "", "Registration Date": ""},
@@ -288,11 +296,9 @@ def main():
         {"Reference": "[RFC4431]", "Type": "DLV", "Value": "32769", "Meaning": "DNSSEC Lookaside Validation", "Template": "", "Registration Date": ""},
         {"Reference": "", "Type": "Reserved", "Value": "65535", "Meaning": "", "Template": "", "Registration Date": ""}]
 
-    r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    r = redis.StrictRedis(host=redis_listen, port=redis_port, db=redis_db)
 
     rrset_supported = ['1', '2', '5', '15', '28', '33']
-
-    origin = "https://www.circl.lu/pdns/"
 
     application = tornado.web.Application([
         (r"/query/(.*)", QueryHandler),
@@ -311,7 +317,7 @@ elif __name__ == "test":
     qq = ["foo.be", "8.8.8.8"]
 
     for q in qq:
-        if iptools.ipv4.validate_ip(q) or iptools.ipv6.validate_ip(q):
+        if is_ip(q):
             for x in getAssociatedRecords(q):
                 print(JsonQOF(getRecord(x)))
         else:
