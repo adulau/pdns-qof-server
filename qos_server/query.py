@@ -3,10 +3,9 @@
 
 import json
 import redis
-from ipaddress import ip_address
 
 
-class Query(object):
+class QueryRecords(object):
 
     def __init__(self, redis_listen, redis_port, redis_db, origin):
         self.rrset = [
@@ -91,32 +90,32 @@ class Query(object):
             {"Reference": "[RFC4431]", "Type": "DLV", "Value": "32769", "Meaning": "DNSSEC Lookaside Validation", "Template": "", "Registration Date": ""},
             {"Reference": "", "Type": "Reserved", "Value": "65535", "Meaning": "", "Template": "", "Registration Date": ""}]
         self.rrset_supported = ['1', '2', '5', '15', '28', '33']
-        self.r = redis.StrictRedis(host=redis_listen, port=redis_port, db=redis_db)
+        self.r = redis.StrictRedis(host=redis_listen, port=redis_port, db=redis_db, decode_responses=True)
         self.origin = origin
 
-    def getFirstSeen(self, t1=None, t2=None):
+    def _getFirstSeen(self, t1=None, t2=None):
         if t1 is None or t2 is None:
             return False
         rec = "s:" + t1.lower() + ":" + t2.lower()
         recget = self.r.get(rec)
         if recget is not None:
-            return int(recget.decode(encoding='UTF-8'))
+            return int(recget)
 
-    def getLastSeen(self, t1=None, t2=None):
+    def _getLastSeen(self, t1=None, t2=None):
         if t1 is None or t2 is None:
             return False
         rec = "l:" + t1.lower() + ":" + t2.lower()
         recget = self.r.get(rec)
         if recget is not None:
-            return int(recget.decode(encoding='UTF-8'))
+            return int(recget)
 
-    def getCount(self, t1=None, t2=None):
+    def _getCount(self, t1=None, t2=None):
         if t1 is None or t2 is None:
             return False
         rec = "o:" + t1.lower() + ":" + t2.lower()
         recget = self.r.get(rec)
         if recget is not None:
-            return int(recget.decode(encoding='UTF-8'))
+            return int(recget)
 
     def getRecord(self, t=None):
         if t is None:
@@ -129,19 +128,19 @@ class Query(object):
                 if rs:
                     for v in rs:
                         rrval = {}
-                        rdata = v.decode(encoding='UTF-8').strip()
-                        rrval['time_first'] = self.getFirstSeen(t1=t, t2=rdata)
-                        rrval['time_last'] = self.getLastSeen(t1=t, t2=rdata)
+                        rdata = v.strip()
+                        rrval['time_first'] = self._getFirstSeen(t1=t, t2=rdata)
+                        rrval['time_last'] = self._getLastSeen(t1=t, t2=rdata)
                         if rrval['time_first'] is None:
                             break
-                        rrval['count'] = self.getCount(t1=t, t2=rdata)
+                        rrval['count'] = self._getCount(t1=t, t2=rdata)
                         rrval['rrtype'] = rr['Type']
                         rrval['rrname'] = t
                         rrval['rdata'] = rdata
                         if self.origin:
                             rrval['origin'] = self.origin
                         rrfound.append(rrval)
-        return self.JsonQOF(rrfound)
+        return self._JsonQOF(rrfound)
 
     def getAssociatedRecords(self, rdata=None):
         if rdata is None:
@@ -150,30 +149,23 @@ class Query(object):
         records = []
         if self.r.smembers(rec):
             for v in self.r.smembers(rec):
-                records.append(v.decode(encoding='UTF-8'))
+                records.append(v)
         return records
 
-    def RemDuplicate(self, d=None):
+    def _RemDuplicate(self, d=None):
         if d is None:
             return False
         outd = [dict(t) for t in set([tuple(o.items()) for o in d])]
         return outd
 
-    def JsonQOF(self, rrfound=None, RemoveDuplicate=True):
+    def _JsonQOF(self, rrfound=None, RemoveDuplicate=True):
         if rrfound is None:
             return False
         rrqof = ""
 
         if RemoveDuplicate:
-            rrfound = self.RemDuplicate(d=rrfound)
+            rrfound = self._RemDuplicate(d=rrfound)
 
         for rr in rrfound:
             rrqof = rrqof + json.dumps(rr) + "\n"
         return rrqof
-
-    def is_ip(self, q):
-        try:
-            ip_address(q)
-            return True
-        except:
-            return False

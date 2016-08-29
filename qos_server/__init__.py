@@ -15,27 +15,35 @@
 # Copyright (c) 2013 Alexandre Dulaunoy - a@foo.be
 
 import tornado.escape
-from tornado.ioloop import IOLoop
 import tornado.web
 import tornado.process
+from tornado.ioloop import IOLoop
 from tornado.concurrent import run_on_executor
-from concurrent.futures import ThreadPoolExecutor
 
+from concurrent.futures import ThreadPoolExecutor
 import argparse
 import sys
 import signal
+from ipaddress import ip_address
 
-from .query import Query
+from .query import QueryRecords
 
 
 def handle_signal(sig, frame):
     IOLoop.instance().add_callback(IOLoop.instance().stop)
 
 
+def is_ip(q):
+    try:
+        ip_address(q)
+        return True
+    except:
+        return False
+
+
 class InfoHandler(tornado.web.RequestHandler):
     def get(self):
-        response = {'version': 'git',
-                    'software': 'pdns-qof-server'}
+        response = {'version': 'git', 'software': 'pdns-qof-server'}
         self.write(response)
 
 
@@ -48,47 +56,15 @@ class QueryHandler(tornado.web.RequestHandler):
 
     @run_on_executor
     def run_request(self, q):
-        to_return = []
-        if query.is_ip(q):
-            for x in query.getAssociatedRecords(q):
-                to_return.append(query.getRecord(x))
+        if is_ip(q):
+            q = query.getAssociatedRecords(q)
         else:
-            to_return.append(query.getRecord(t=q.strip()))
-        return to_return
+            q = [q]
+        return [query.getRecord(x) for x in q]
 
     @tornado.gen.coroutine
     def get(self, q):
         print("query: " + q)
-        try:
-            responses = yield self.run_request(q)
-            for r in responses:
-                self.write(r)
-        except Exception as e:
-            print('Something went wrong with {}:\n{}'.format(q, e))
-        finally:
-            self.finish()
-
-
-class FullQueryHandler(tornado.web.RequestHandler):
-    # Default value in Python 3.5
-    # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor
-    nb_threads = tornado.process.cpu_count() * 5
-    executor = ThreadPoolExecutor(nb_threads)
-
-    @run_on_executor
-    def run_request(self, q):
-        to_return = []
-        if query.is_ip(q):
-            for x in query.getAssociatedRecords(q):
-                to_return.append(query.getRecord(x))
-        else:
-            for x in query.getAssociatedRecords(q):
-                to_return.append(query.getRecord(t=x.strip()))
-        return to_return
-
-    @tornado.gen.coroutine
-    def get(self, q):
-        print("fquery: " + q)
         try:
             responses = yield self.run_request(q)
             for r in responses:
@@ -111,6 +87,7 @@ def main():
     argParser.add_argument('-rl', default='localhost', help='redis-server listen address (default localhost)')
     argParser.add_argument('-rd', default=0, help='redis-server database (default 0)')
     args = argParser.parse_args()
+
     origin = args.o
     port = args.p
     listen = args.l
@@ -118,13 +95,10 @@ def main():
     redis_listen = args.rl
     redis_db = args.rd
 
-    query = Query(redis_listen, redis_port, redis_db, origin)
+    query = QueryRecords(redis_listen, redis_port, redis_db, origin)
 
-    application = tornado.web.Application([
-        (r"/query/(.*)", QueryHandler),
-        (r"/fquery/(.*)", FullQueryHandler),
-        (r"/info", InfoHandler)
-    ])
+    application = tornado.web.Application([(r"/query/(.*)", QueryHandler),
+                                           (r"/info", InfoHandler)])
 
     application.listen(port, address=listen)
     IOLoop.instance().start()
@@ -138,7 +112,7 @@ elif __name__ == "test":
     qq = ["foo.be", "8.8.8.8"]
 
     for q in qq:
-        if query.is_ip(q):
+        if is_ip(q):
             for x in query.getAssociatedRecords(q):
                 print(query.getRecord(x))
         else:
