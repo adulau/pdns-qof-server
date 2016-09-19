@@ -26,7 +26,7 @@ import sys
 import signal
 from ipaddress import ip_address
 
-from .query import QueryRecords
+from qos_server.query import QueryRecords
 
 
 def handle_signal(sig, frame):

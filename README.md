@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/adulau/pdns-qof-server.svg?branch=master)](https://travis-ci.org/adulau/pdns-qof-server)
+
 Passive DNS server interface
 ============================
 

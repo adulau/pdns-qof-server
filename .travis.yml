@@ -1,0 +1,30 @@
+language: python
+
+cache: pip
+
+services:
+  - redis-server
+
+python:
+  - "3.3"
+  - "3.4"
+  - "3.5"
+  - "3.5-dev"
+  - "nightly"
+
+install:
+  - pip install coveralls
+  - pip install codecov
+  - pip install .
+
+script:
+  - coverage run --parallel-mode --source=qos_server qos_server/__init__.py &
+  - pid=$!
+  - sleep 5
+  - curl http://127.0.0.1:8888/query/www.microsoft.com
+  - curl http://127.0.0.1:8888/query/80.169.63.162
+  - kill -s INT $pid
+
+after_success:
+  - codecov
+  - coveralls
